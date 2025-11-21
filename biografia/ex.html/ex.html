@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Mini Subway Block</title>
+
+<style>
+    body {
+        margin: 0;
+        overflow: hidden;
+        background: #111;
+        font-family: Arial;
+    }
+
+    #game {
+        position: relative;
+        width: 100vw;
+        height: 100vh;
+    }
+
+    #player {
+        position: absolute;
+        width: 50px;
+        height: 50px;
+        background: limegreen;
+        left: 200px;
+        top: 50%;
+        transform: translateY(-50%);
+    }
+
+    #enemy {
+        position: absolute;
+        width: 50px;
+        height: 50px;
+        background: black;
+        left: 50px;
+        top: 50%;
+        transform: translateY(-50%);
+    }
+
+    .obstacle {
+        position: absolute;
+        width: 50px;
+        height: 50px;
+        background: red;
+    }
+
+    #speedLabel {
+        color: white;
+        font-size: 24px;
+        position: absolute;
+        top: 20px;
+        left: 20px;
+    }
+</style>
+</head>
+<body>
+
+<div id="game">
+    <div id="player"></div>
+    <div id="enemy"></div>
+    <div id="speedLabel">Velocidade: 5</div>
+</div>
+
+<script>
+const game = document.getElementById("game");
+const player = document.getElementById("player");
+const enemy = document.getElementById("enemy");
+const speedLabel = document.getElementById("speedLabel");
+
+let lanes = [100, 250, 400];  // Três "pistas" como Subway Surfers
+let playerLane = 1;
+
+let speed = 5;      // velocidade do jogador
+let enemySpeed = 3; // velocidade do perseguidor
+let obstacles = [];
+
+document.addEventListener("keydown", (e) => {
+    if (e.key === "w" || e.key === "ArrowUp") playerLane = Math.max(0, playerLane - 1);
+    if (e.key === "s" || e.key === "ArrowDown") playerLane = Math.min(2, playerLane + 1);
+    player.style.top = lanes[playerLane] + "px";
+});
+
+// Criar obstáculos
+function spawnObstacle() {
+    const obs = document.createElement("div");
+    obs.classList.add("obstacle");
+
+    obs.style.left = "100vw";
+    obs.style.top = lanes[Math.floor(Math.random() * 3)] + "px";
+
+    obs.speed = 3 + Math.random() * 3;
+
+    // Movimento aleatório vertical
+    obs.vy = Math.random() * 4 - 2;
+
+    obstacles.push(obs);
+    game.appendChild(obs);
+}
+
+setInterval(spawnObstacle, 1200);
+
+// Movimento principal
+function update() {
+
+    // Movimento do jogador (para frente)
+    speed += 0.002; // aceleração leve
+    speedLabel.textContent = "Velocidade: " + speed.toFixed(1);
+
+    // Inimigo persegue suavemente
+    const enemyY = enemy.offsetTop;
+    const targetY = player.offsetTop;
+
+    if (enemyY < targetY) enemy.style.top = (enemyY + enemySpeed) + "px";
+    else enemy.style.top = (enemyY - enemySpeed) + "px";
+
+    enemy.style.left = (enemy.offsetLeft + enemySpeed) + "px";
+
+    // Verificar colisão com jogador
+    const p = player.getBoundingClientRect();
+    const e = enemy.getBoundingClientRect();
+    if (!(e.right < p.left || e.left > p.right || e.bottom < p.top || e.top > p.bottom)) {
+        alert("Você foi pego! Game Over");
+        location.reload();
+    }
+
+    // Atualizar obstáculos
+    obstacles.forEach((obs, i) => {
+        obs.style.left = (obs.offsetLeft - speed) + "px";
+        obs.style.top = (obs.offsetTop + obs.vy) + "px";
+
+        // Mantém obstáculo dentro da tela verticalmente
+        if (obs.offsetTop <= 0 || obs.offsetTop >= innerHeight - 60) {
+            obs.vy *= -1;
+        }
+
+        // Colisão com jogador
+        const o = obs.getBoundingClientRect();
+        if (!(o.right < p.left || o.left > p.right || o.bottom < p.top || o.top > p.bottom)) {
+            speed *= 0.7; // perde velocidade
+        }
+
+        // Remover fora da tela
+        if (obs.offsetLeft < -100) {
+            obs.remove();
+            obstacles.splice(i, 1);
+        }
+    });
+
+    requestAnimationFrame(update);
+}
+
+update();
+</script>
+
+</body>
+</html>
